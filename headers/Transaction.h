@@ -16,7 +16,7 @@ class Transaction
 
         Transaction(const std::string &sender, const std::string &receiver, const unsigned amount) :
             sender(sender), receiver(receiver), amount(amount)
-            { transaction_id = hash(sender + receiver + std::to_string(amount)); }
+            { transaction_id = hash(sender + receiver + std::to_string(amount)); } // @TODO refactor
 
         std::string getSender()
         {
@@ -28,9 +28,14 @@ class Transaction
             return receiver;
         }
 
-        unsigned long long getAmount()
+        unsigned getAmount()
         {
             return amount;
+        }
+
+        operator std::string() const
+        {
+            return sender + receiver + std::to_string(amount);
         }
 
 };

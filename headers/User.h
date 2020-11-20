@@ -34,7 +34,7 @@ class User
         return name;
     }
 
-    unsigned long long getBalance()
+    unsigned getBalance()
     {
         return balance;
     }
