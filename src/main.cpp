@@ -14,10 +14,19 @@ int main()
     std::vector<User> userPool = generateUsers(1000);
     std::cout << "Generating transactions..." << std::endl;
     std::vector<Transaction> transactionPool = generateTransactions(10000, userPool);
-    std::vector<Transaction> pickedTransactions = pickRandTransactions(500, transactionPool, userPool);
+    std::cout << "Mining..." << std::endl;
     Miner miner;
-    Block b = miner.mineBlock(pickedTransactions);
-    std::cout << "Block mined! " << hash(b) << std::endl;
+    std::vector<Transaction> pickedTransactions;
+    while (transactionPool.size() != 0)
+    {
+        pickedTransactions = pickRandTransactions(500, transactionPool, userPool);
+        Block minedBlock = miner.mineBlock(pickedTransactions);
+        executeTransactionPool(validateTransactions(minedBlock.transactions, userPool), userPool);
+        std::cout << "Block mined! " << hash(minedBlock) << std::endl;
+    }
+    
+    
+    
     
 
     return 0;

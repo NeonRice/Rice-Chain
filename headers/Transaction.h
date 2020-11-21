@@ -13,6 +13,8 @@ class Transaction
 
     public:
         std::string transaction_id;
+        bool isValid = true;
+        bool isComplete = false;
 
         Transaction(const std::string &sender, const std::string &receiver, const unsigned amount) :
             sender(sender), receiver(receiver), amount(amount)

@@ -2,6 +2,7 @@
 
 #include "User.h"
 #include <string>
+#include <algorithm>
 
 inline User* getUserByKey(const std::string &pKey, std::vector<User> &userPool)
 {

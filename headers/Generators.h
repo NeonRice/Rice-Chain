@@ -24,7 +24,7 @@ inline std::vector<User> generateUsers(const unsigned &amount, const unsigned &p
 
     for (size_t i = 0; i < amount; i++)
     {
-        userPostfix += i;
+        userPostfix += 1;
         users.push_back(generateUser(std::to_string(userPostfix)));
     }
 

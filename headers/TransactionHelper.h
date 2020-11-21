@@ -18,7 +18,17 @@ inline bool isValidTransaction(Transaction transaction, std::vector<User> &userP
     return false;
 }
 
-Transaction executeTransaction(Transaction toExecute, std::vector<User> &userPool)
+std::vector<Transaction>& validateTransactions(std::vector<Transaction> &transactions, std::vector<User> &userPool)
+{
+    for (auto &&transaction : transactions)
+    {
+        if (!isValidTransaction(transaction, userPool))
+            transaction.isValid = false;
+    }
+    return transactions;
+}
+
+Transaction* executeTransaction(Transaction &toExecute, std::vector<User> &userPool)
 {
     // Must be verified before execution   
     User *sender = getUserByKey(toExecute.getSender(), userPool);
@@ -27,7 +37,17 @@ Transaction executeTransaction(Transaction toExecute, std::vector<User> &userPoo
     sender->setBalance(sender->getBalance() - toExecute.getAmount());
     receiver->setBalance(receiver->getBalance() + toExecute.getAmount());
 
-    return toExecute;
+    return &toExecute;
+}
+
+std::vector<Transaction>& executeTransactionPool(std::vector<Transaction> &transactions, std::vector<User> &userPool)
+{
+    // Must be verified before execution   
+    for (auto &&transaction : transactions)
+        if (transaction.isValid)
+            executeTransaction(transaction, userPool)->isComplete = true;
+
+    return transactions;
 }
 
 std::vector<Transaction> pickRandTransactions(
@@ -37,20 +57,24 @@ std::vector<Transaction> pickRandTransactions(
 {
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev());
-    std::uniform_int_distribution<int> distr(0, transactions.size());
-
+    
     std::vector<Transaction> pickedTransactions;
+
+    if (amount > transactions.size())
+    {
+        transactions.erase(transactions.begin(), transactions.end());
+        return transactions;
+    }
 
     for (size_t i = 0; i < amount; i++)
     {
+        std::uniform_int_distribution<int> distr(0, transactions.size() - 1);
         int transactionNr = distr(generator);
+
         Transaction transaction = transactions[transactionNr];
-        if (isValidTransaction(transaction, userPool))
-        {
-            executeTransaction(transaction, userPool);
-            pickedTransactions.push_back(transaction);
-            transactions.erase(transactions.begin() + transactionNr);
-        }
+
+        pickedTransactions.push_back(transaction);
+        transactions.erase(transactions.begin() + transactionNr);
     }
     return pickedTransactions;
 } 

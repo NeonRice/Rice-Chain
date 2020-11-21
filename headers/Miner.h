@@ -9,10 +9,10 @@
 #include "Block.h"
 #include "Transaction.h"
 #include "TransactionHelper.h"
+#include "VectorHelper.h"
 
-constexpr unsigned THREADS = 5;
-unsigned COMPLEXITY = 3;
-
+constexpr unsigned THREADS = 12;
+unsigned COMPLEXITY = 4;
 
 struct Miner
 {
@@ -22,8 +22,9 @@ struct Miner
     unsigned successfulTries = 0;
 
     std::string lastBlockHash = hash("default");
-    std::atomic<bool> isDone = false;
-    //std::atomic<Block> minedBlock;
+    std::atomic<bool> isDone;
+
+    Miner() { isDone.store(false); }
 
     std::string merkleRoot(std::vector<std::string> transactionIds)
     {
@@ -43,26 +44,26 @@ struct Miner
         return temp[0];
     }
 
-    unsigned long getNonce()
+    unsigned getNonce()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev());
-        std::uniform_int_distribution<unsigned long> distr(0, std::numeric_limits<unsigned long>::max());
+        std::uniform_int_distribution<unsigned> distr(0, std::numeric_limits<unsigned>::max());
 
         return distr(generator);
     }
 
     inline bool isAdequateComplexity(const std::string &hash)
     {
-        return hash.substr(0, COMPLEXITY) == std::string("0", COMPLEXITY);
+        return hash.substr(0, COMPLEXITY) == std::string(COMPLEXITY, '0');
     }
 
-    void tryBlock(std::vector<Transaction> transactions)
+    Block tryBlock(std::vector<Transaction> transactions)
     {
-        const unsigned long nonce = getNonce();
+        const unsigned nonce = getNonce();
         const std::string prevBlockHash = lastBlockHash;
         const std::string merkelRootHash = this->merkleRoot(getTransactionIds(transactions));
-        
+
         Block block = Block(nonce, prevBlockHash, COMPLEXITY, merkelRootHash, transactions);
         std::string blockHash = hash(block);
 
@@ -71,40 +72,33 @@ struct Miner
             if (isAdequateComplexity(blockHash))
             {
                 isDone.store(true);
-                //minedBlock.store(block);
                 break;
             }
-            block = Block(nonce, prevBlockHash, COMPLEXITY, merkelRootHash, transactions);
+            block = Block(getNonce(), prevBlockHash, COMPLEXITY, merkelRootHash, transactions);
             blockHash = hash(block);
         }
+        return block;
     }
 
-    Block mineBlock(std::vector<Transaction> transactions)
+    Block mineBlock(std::vector<Transaction> &transactions)
     {
-        std::vector<std::thread> threads;
+        std::vector<std::future<Block>> threads;
+        std::vector<std::vector<Transaction>> splitTransactions = SplitVector<Transaction>(transactions, THREADS);
 
         for (size_t i = 0; i < THREADS; i++)
-        {
-            // Danger here
-            threads.push_back(std::thread(&Miner::tryBlock, std::vector<Transaction>(
-                transactions.begin() + i * 100, transactions.begin() + i * 100 + 100
-                )
-            ));
-            /* std::vector<Transaction> transactions(
-                            transactions.begin() + i * 100, transactions.begin() + i * 100 + 100
-                            );
-            //threads.push_back(std::async(&tryBlock, std::ref(transactions)));
-            std::async(&tryBlock, std::ref(transactions)); */
-        }
+            threads.push_back(std::async(&Miner::tryBlock, this, std::ref(splitTransactions[i])));
 
-            for (auto &&thread : threads)
-                thread.join();
-            
-            //return minedBlock.load();
-            /* for (auto &&block : threads)
+        for (auto &&block : threads)
+        {
+            Block minedBlock = block.get();
+            std::string minedBlockHash = hash(minedBlock);
+            if (isAdequateComplexity(minedBlockHash))
             {
-                if (isAdequateComplexity(hash(block.get())))
-                    return block.get();
-            } */
+                isDone.store(false);
+                lastBlockHash = minedBlockHash;
+                return minedBlock;
+            }
+        }
+        //
     }
 };
