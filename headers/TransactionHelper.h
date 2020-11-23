@@ -9,7 +9,7 @@
 
 // Not good in an actual application, as you can send money to an invalid user.
 // Also no check for nullptr, but for this example it will satisfy.
-inline bool isValidTransaction(Transaction transaction, std::vector<User> &userPool)
+inline bool isValidTransaction(Transaction &transaction, std::vector<User> &userPool)
 {
      if (transaction.transaction_id == hash(
         transaction.getSender() + transaction.getReceiver() + std::to_string(transaction.getAmount())
@@ -62,8 +62,9 @@ std::vector<Transaction> pickRandTransactions(
 
     if (amount > transactions.size())
     {
+        pickedTransactions = transactions;
         transactions.erase(transactions.begin(), transactions.end());
-        return transactions;
+        return pickedTransactions;
     }
 
     for (size_t i = 0; i < amount; i++)
